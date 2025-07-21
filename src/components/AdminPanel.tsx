@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Edit, MessageSquare, Users, Database, Trash2 } from "lucide-react";
+import { Plus, Edit, MessageSquare, Users, Database, Trash2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AdminLogin } from "./AdminLogin";
 
 interface KnowledgeItem {
   id: number;
@@ -36,6 +37,7 @@ interface GuestbookEntry {
 }
 
 export const AdminPanel = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
   const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
@@ -49,7 +51,12 @@ export const AdminPanel = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchData();
+    // Admin giriş durumunu kontrol et
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+    if (adminLoggedIn === "true") {
+      setIsLoggedIn(true);
+      fetchData();
+    }
   }, []);
 
   const fetchData = async () => {
@@ -172,13 +179,48 @@ export const AdminPanel = () => {
     }
   };
 
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    fetchData();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("adminUsername");
+    setIsLoggedIn(false);
+    setKnowledge([]);
+    setChatLogs([]);
+    setGuestbook([]);
+    toast({
+      title: "Çıkış Yapıldı",
+      description: "Başarıyla çıkış yaptınız.",
+    });
+  };
+
+  // Giriş yapılmamışsa login ekranını göster
+  if (!isLoggedIn) {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-          Admin Paneli
-        </h1>
-        <p className="text-muted-foreground mt-2">Chatbot ve sistem yönetimi</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            Admin Paneli
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Chatbot ve sistem yönetimi - Hoş geldiniz, {localStorage.getItem("adminUsername")}
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleLogout}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Çıkış Yap
+        </Button>
       </div>
 
       <Tabs defaultValue="knowledge" className="space-y-6">
